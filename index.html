@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Master AI v1.9 - Strict Mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .word-tag { display: inline-block; background: #f1f5f9; color: #475569; padding: 2px 12px; border-radius: 8px; margin: 3px; font-weight: 600; font-size: 0.85em; border: 1px solid #e2e8f0; }
+        .char-error { color: #ef4444; text-decoration: underline; text-decoration-thickness: 2px; font-weight: 700; background-color: #fee2e2; }
+        .char-normal { color: #334155; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dialogue-line { margin-bottom: 0.5rem; color: #475569; }
+        .prompt-line { font-weight: 600; color: #1e293b; border-left: 4px solid #6366f1; padding-left: 12px; margin-top: 10px; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
+
+    <div id="app" class="max-w-3xl mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-indigo-600 tracking-tight">QUIZ MASTER AI <span class="text-sm font-normal text-slate-400">v1.9</span></h1>
+            <p class="text-slate-500 mt-2 italic text-sm">Chế độ nghiêm ngặt - Case Insensitive</p>
+        </header>
+
+        <!-- SETUP SCREEN -->
+        <div id="setup-screen" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 fade-in">
+            <h2 class="text-xl font-semibold mb-2 text-slate-700">Dữ liệu bài tập</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px] text-slate-500 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div>
+                    <p class="font-bold text-red-600 mb-1">Chế độ Nghiêm ngặt:</p>
+                    <p>Sai số < 10% ký tự. Không bắt lỗi viết hoa/thường.</p>
+                </div>
+                <div>
+                    <p class="font-bold text-indigo-600 mb-1">Cú pháp đáp án:</p>
+                    <p>Dùng <span class="text-indigo-600 font-bold">(cụm 1) / (cụm 2)</span> cho các lựa chọn tương đương.</p>
+                </div>
+            </div>
+            <textarea id="raw-input" class="w-full h-72 p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all mb-4 font-mono text-sm custom-scrollbar" placeholder="Ví dụ: Câu hỏi | (tell me) / (let me know) the truth."></textarea>
+            
+            <div class="flex justify-between items-center">
+                <span id="question-count" class="text-sm font-bold text-indigo-500">0 câu hỏi</span>
+                <button onclick="startQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-3.5 rounded-xl font-bold transition-all shadow-lg active:scale-95">
+                    Bắt đầu thử thách
+                </button>
+            </div>
+        </div>
+
+        <!-- QUIZ SCREEN -->
+        <div id="quiz-screen" class="hidden bg-white p-8 rounded-2xl shadow-sm border border-slate-200 fade-in">
+            <div class="flex justify-between items-center mb-8">
+                <span id="progress-text" class="text-xs font-bold text-indigo-600 uppercase tracking-widest">Câu 1/1</span>
+                <div class="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-indigo-500 transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div id="question-container" class="min-h-[400px] flex flex-col">
+                <div id="question-display" class="mb-8 text-left bg-slate-50 p-6 rounded-2xl border border-slate-100"></div>
+                <div id="answer-area" class="w-full"></div>
+
+                <div id="feedback-area" class="hidden mt-6 p-6 rounded-2xl border-l-8 fade-in">
+                    <div id="feedback-status" class="font-black text-2xl mb-4"></div>
+                    <div class="grid grid-cols-1 gap-4">
+                        <div>
+                            <div class="text-[10px] text-slate-400 uppercase font-bold mb-1 tracking-wider">Câu bạn viết:</div>
+                            <div id="user-diff-display" class="p-4 bg-white rounded-xl border border-slate-200 font-medium text-lg leading-relaxed"></div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-400 uppercase font-bold mb-1 tracking-wider">Đáp án đúng:</div>
+                            <div id="correct-display" class="p-4 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 font-bold text-lg leading-relaxed"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between mt-12 pt-6 border-t border-slate-100">
+                <button onclick="goBackToSetup()" class="bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-600 px-6 py-3.5 rounded-xl font-bold transition-all">Thoát</button>
+                <button id="btn-action" onclick="handleButtonClick()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-3.5 rounded-xl font-bold shadow-xl transition-all active:scale-95">
+                    Kiểm tra (Enter)
+                </button>
+            </div>
+        </div>
+
+        <!-- RESULT SCREEN -->
+        <div id="result-screen" class="hidden bg-white p-8 rounded-2xl shadow-sm border border-slate-200 fade-in">
+            <div class="text-center mb-10">
+                <div id="score-circle" class="mx-auto w-28 h-28 rounded-full border-8 border-indigo-500 flex items-center justify-center text-4xl font-black text-indigo-600 mb-4 shadow-inner">0/0</div>
+                <h2 class="text-2xl font-bold mb-1">Kết quả bài làm</h2>
+                <p class="text-slate-400 text-sm">Cải thiện độ chính xác từng ngày</p>
+            </div>
+
+            <div class="mb-10 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar space-y-4" id="review-list"></div>
+
+            <div class="grid grid-cols-2 gap-4 max-w-sm mx-auto">
+                <button onclick="restartQuiz()" class="bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all active:scale-95">Luyện lại</button>
+                <button onclick="goBackToSetup()" class="bg-slate-100 text-slate-700 py-4 rounded-xl font-bold hover:bg-slate-200 transition-all">Bài mới</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let questions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let isWaitingForNext = false;
+        let quizResults = [];
+
+        window.onload = () => {
+            const saved = localStorage.getItem('quiz_master_v19');
+            if (saved) {
+                document.getElementById('raw-input').value = saved;
+                updateCount();
+            }
+        };
+
+        function updateCount() {
+            const val = document.getElementById('raw-input').value;
+            const count = val.split('\n').filter(l => l.trim().includes('|')).length;
+            document.getElementById('question-count').innerText = `${count} câu hỏi`;
+            localStorage.setItem('quiz_master_v19', val);
+        }
+
+        document.getElementById('raw-input').addEventListener('input', updateCount);
+
+        // Hiển thị khác biệt (chỉ đánh dấu lỗi thực sự, bỏ qua hoa thường)
+        function getComparison(user, correct) {
+            let userHtml = "";
+            let i = 0, j = 0;
+            const u = user || "";
+            const c = correct.replace(/[()]/g, "") || "";
+            
+            while (i < u.length || j < c.length) {
+                if (i < u.length && j < c.length && u[i].toLowerCase() === c[j].toLowerCase()) {
+                    userHtml += `<span class="char-normal">${u[i]}</span>`;
+                    i++; j++;
+                } else {
+                    if (i < u.length) {
+                        userHtml += `<span class="char-error">${u[i]}</span>`;
+                        i++;
+                    } else if (j < c.length) {
+                        userHtml += `<span class="char-error">_</span>`;
+                        j++;
+                    }
+                }
+            }
+            return userHtml;
+        }
+
+        function levenshtein(a, b) {
+            const matrix = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+            for (let j = 1; j <= b.length; j++) matrix[0][j] = j;
+            for (let i = 1; i <= a.length; i++) {
+                for (let j = 1; j <= b.length; j++) {
+                    matrix[i][j] = a[i - 1].toLowerCase() === b[j - 1].toLowerCase() ? matrix[i - 1][j - 1] : Math.min(matrix[i - 1][j - 1] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j] + 1);
+                }
+            }
+            return matrix[a.length][b.length];
+        }
+
+        function startQuiz() {
+            const rawText = document.getElementById('raw-input').value;
+            const lines = rawText.split('\n');
+            questions = [];
+            let currentQ = [];
+            for (let line of lines) {
+                if (line.includes('|')) {
+                    const parts = line.split('|');
+                    const qPart = (currentQ.join('\n') + '\n' + parts[0]).trim();
+                    const aPart = parts[1].trim().split('/').map(a => a.trim());
+                    questions.push({ q: qPart, a: aPart });
+                    currentQ = [];
+                } else if (line.trim() !== '') {
+                    currentQ.push(line.trim());
+                }
+            }
+            if (questions.length === 0) return alert("Vui lòng nhập câu hỏi!");
+            shuffle(questions);
+            currentIndex = 0; score = 0; quizResults = [];
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            isWaitingForNext = false;
+            const item = questions[currentIndex];
+            const btn = document.getElementById('btn-action');
+            document.getElementById('feedback-area').classList.add('hidden');
+            btn.innerText = "Kiểm tra (Enter)";
+            btn.className = "bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-3.5 rounded-xl font-bold shadow-xl transition-all active:scale-95";
+            document.getElementById('progress-text').innerText = `Câu ${currentIndex + 1}/${questions.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentIndex) / questions.length) * 100}%`;
+            
+            const display = document.getElementById('question-display');
+            if (item.q.includes('/')) {
+                const tags = item.q.split('/').map(t => `<span class="word-tag">${t.trim()}</span>`).join('');
+                display.innerHTML = `<div class="mb-3 text-indigo-400 text-[10px] font-bold uppercase tracking-widest">Sắp xếp/Viết lại câu:</div><div class="flex flex-wrap">${tags}</div>`;
+            } else {
+                display.innerHTML = item.q.split('\n').map(l => l.startsWith('-') ? `<div class="prompt-line text-lg">${l}</div>` : `<div class="dialogue-line italic text-slate-500">${l}</div>`).join('');
+            }
+            
+            let initial = "";
+            const lines = item.q.split('\n');
+            const lastLine = lines[lines.length-1];
+            if (lastLine.startsWith('-')) {
+                initial = lastLine.substring(1).trim().split('___')[0].trim();
+                if (initial) initial += " ";
+            }
+
+            document.getElementById('answer-area').innerHTML = `<textarea id="ans-input" class="w-full p-5 border-2 border-slate-200 rounded-2xl text-xl outline-none focus:border-indigo-500 transition-all h-32 resize-none shadow-inner" placeholder="Câu trả lời của bạn..." autocomplete="off">${initial}</textarea>`;
+            const input = document.getElementById('ans-input');
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+            input.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleButtonClick(); } };
+        }
+
+        function handleButtonClick() { if (isWaitingForNext) nextQuestion(); else handleSubmit(); }
+
+        function clean(str) {
+            // Loại bỏ khoảng trắng thừa, viết thường, bỏ dấu chấm câu cuối và quan trọng là bỏ ngoặc đơn ()
+            return str.toLowerCase().trim().replace(/\s+/g, ' ').replace(/[.,?!]$/, '').replace(/[()]/g, "");
+        }
+
+        function handleSubmit() {
+            const item = questions[currentIndex];
+            const input = document.getElementById('ans-input');
+            const userAns = input.value.trim();
+            if (!userAns) return;
+
+            const cleanUser = clean(userAns);
+            let foundCorrect = false;
+            let bestTarget = "";
+
+            for (let ans of item.a) {
+                let variations = [ans];
+                // Hỗ trợ (a) / (b)
+                const regex = /\(([^)]+)\)\s\/\s\(([^)]+)\)/g;
+                let match;
+                while ((match = regex.exec(ans)) !== null) {
+                    variations.push(ans.replace(match[0], match[1]));
+                    variations.push(ans.replace(match[0], match[2]));
+                }
+                // Hỗ trợ a / b
+                const regexPlain = /(\w+)\s\/\s(\w+)/g;
+                while ((match = regexPlain.exec(ans)) !== null) {
+                    variations.push(ans.replace(match[0], match[1]));
+                    variations.push(ans.replace(match[0], match[2]));
+                }
+
+                for (let v of variations) {
+                    const cleanV = clean(v);
+                    // Dùng Levenshtein để tính toán sai lệch không phân biệt hoa thường
+                    const dist = levenshtein(userAns, v.replace(/[()]/g, ""));
+                    const errorRatio = dist / Math.max(1, cleanV.length);
+                    
+                    if (errorRatio < 0.10) { 
+                        foundCorrect = true;
+                        bestTarget = v;
+                        break;
+                    }
+                }
+                if (foundCorrect) break;
+            }
+
+            if (!bestTarget) bestTarget = item.a[0];
+
+            input.disabled = true;
+            document.getElementById('feedback-area').classList.remove('hidden');
+            isWaitingForNext = true;
+            document.getElementById('btn-action').innerText = "Tiếp theo (Enter)";
+            document.getElementById('btn-action').className = "bg-slate-800 hover:bg-black text-white px-12 py-3.5 rounded-xl font-bold shadow-xl transition-all active:scale-95";
+            
+            document.getElementById('user-diff-display').innerHTML = getComparison(userAns, bestTarget);
+            
+            const cleanDisplayCorrect = item.a.map(a => a.replace(/[()]/g, "").replace(/\s\/\s/g, " / ")).join(' hoặc ');
+            document.getElementById('correct-display').innerText = cleanDisplayCorrect;
+
+            const status = document.getElementById('feedback-status');
+            const feedbackBox = document.getElementById('feedback-area');
+            if (foundCorrect) {
+                score++;
+                status.innerText = "✓ CHÍNH XÁC";
+                status.className = "font-black text-2xl mb-4 text-emerald-600 tracking-tight";
+                feedbackBox.className = "mt-6 p-6 rounded-2xl border-l-8 border-emerald-500 bg-emerald-50/50 fade-in";
+            } else {
+                status.innerText = "✕ CHƯA CHÍNH XÁC";
+                status.className = "font-black text-2xl mb-4 text-red-600 tracking-tight";
+                feedbackBox.className = "mt-6 p-6 rounded-2xl border-l-8 border-red-500 bg-red-50/50 fade-in";
+            }
+
+            quizResults.push({ 
+                question: item.q.replace(/\n/g, ' '), 
+                userHtml: document.getElementById('user-diff-display').innerHTML, 
+                correctAns: cleanDisplayCorrect, 
+                isCorrect: foundCorrect 
+            });
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < questions.length) renderQuestion();
+            else finishQuiz();
+        }
+
+        function finishQuiz() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('score-circle').innerText = `${score}/${questions.length}`;
+            document.getElementById('review-list').innerHTML = quizResults.map((res, i) => `
+                <div class="p-5 rounded-2xl border ${res.isCorrect ? 'border-emerald-100 bg-emerald-50/30' : 'border-red-100 bg-red-50/30'}">
+                    <div class="text-[10px] font-bold uppercase mb-2 ${res.isCorrect ? 'text-emerald-500' : 'text-red-500'}">Câu ${i+1}</div>
+                    <div class="text-sm font-bold mb-3 text-slate-700">${res.question}</div>
+                    <div class="space-y-2">
+                        <div class="p-3 bg-white rounded-xl border border-slate-200 text-sm font-mono shadow-sm">${res.userHtml}</div>
+                        <div class="p-3 bg-emerald-100/50 text-emerald-800 rounded-xl text-sm font-bold italic">${res.correctAns}</div>
+                    </div>
+                </div>`).join('');
+        }
+
+        function goBackToSetup() {
+            document.getElementById('setup-screen').classList.remove('hidden');
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+        }
+
+        function shuffle(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } }
+        function restartQuiz() { startQuiz(); }
+    </script>
+</body>
+</html>
