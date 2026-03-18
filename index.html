@@ -3,247 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Em chưa tày đâu v4.3</title>
+    <title>Em chưa tày đâu v4.5</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Library for parsing .docx files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .custom-scrollbar::-webkit-scrollbar { width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        .option-btn { transition: all 0.2s; border: 2px solid #e2e8f0; cursor: pointer; }
-        .option-btn:hover { border-color: #6366f1; background: #f8fafc; }
-        .option-btn.selected { border-color: #6366f1; background: #eef2ff; color: #4f46e5; font-weight: 700; }
+        .option-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 2px solid #f1f5f9; background: white; cursor: pointer; position: relative; }
+        .option-btn:hover { background: #f8fafc; border-color: #e2e8f0; transform: translateY(-1px); }
+        .option-btn.selected { border-color: #4f46e5; background: #eef2ff; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1); }
+        .label-box { background: #f1f5f9; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: 800; color: #1e293b; flex-shrink: 0; transition: all 0.2s; }
+        .option-btn.selected .label-box { background: #4f46e5; color: white; }
+        .key-hint { position: absolute; right: 12px; top: 12px; font-size: 10px; font-weight: 800; color: #cbd5e1; border: 1px solid #f1f5f9; padding: 2px 6px; border-radius: 6px; }
         .tf-btn.active-đúng { background-color: #10b981; color: white; border-color: #059669; }
         .tf-btn.active-sai { background-color: #ef4444; color: white; border-color: #dc2626; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen font-sans text-slate-900">
-
-    <div id="app" class="max-w-3xl mx-auto px-4 py-8">
-        <header class="text-center mb-8">
+<body class="bg-slate-50 min-h-screen text-slate-900">
+    <div id="app" class="max-w-3xl mx-auto px-4 py-12">
+        <header class="text-center mb-10">
             <h1 class="text-4xl font-black text-indigo-600 tracking-tighter uppercase">EM CHƯA TÀY ĐÂU</h1>
-            <p class="text-slate-500 mt-2 font-bold text-sm italic">Học thông minh - Thi cực đỉnh</p>
+            <p class="text-slate-400 mt-2 font-bold text-sm tracking-wide italic underline decoration-indigo-200">SHUFFLE & KEYS EDITION</p>
         </header>
 
         <!-- SETUP SCREEN -->
-        <div id="setup-screen" class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200 fade-in">
+        <div id="setup-screen" class="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 fade-in">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-slate-700">Dữ liệu đề bài</h2>
-                <div class="flex items-center space-x-4">
+                <h2 class="text-xl font-extrabold text-slate-800">Soạn đề bài</h2>
+                <div class="flex items-center space-x-3">
                     <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold flex items-center transition-all">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        Nhập file .docx
-                        <input type="file" id="file-upload" accept=".docx" class="hidden" onchange="handleFileUpload(event)">
+                        Nhập .docx <input type="file" id="file-upload" accept=".docx" class="hidden" onchange="handleFileUpload(event)">
                     </label>
-                    <button onclick="showGuide()" class="text-indigo-600 hover:underline text-sm font-bold flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        Hướng dẫn cấu trúc
-                    </button>
                 </div>
             </div>
-            
-            <textarea id="raw-input" class="w-full h-80 p-5 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all mb-4 font-mono text-sm custom-scrollbar" placeholder="Nhập đề bài theo cấu trúc [TN], [DS], [TLN]... kết thúc bằng dấu chấm phẩy (;)"></textarea>
-            
+            <textarea id="raw-input" class="w-full h-80 p-6 bg-slate-50 border-2 border-slate-100 rounded-3xl focus:ring-4 focus:ring-indigo-50 focus:border-indigo-400 outline-none transition-all mb-4 font-mono text-sm custom-scrollbar" placeholder="Dán nội dung từ AI hoặc file Word vào đây..."></textarea>
             <div class="flex justify-between items-center">
-                <span id="question-count" class="text-sm font-black text-indigo-500">0 câu hỏi</span>
-                <button onclick="startQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-4 rounded-2xl font-black transition-all shadow-lg active:scale-95 uppercase tracking-wider">
-                    Bắt đầu học ngay
-                </button>
+                <div class="flex flex-col">
+                    <span id="question-count" class="text-sm font-black text-slate-400 uppercase tracking-widest">0 câu hỏi</span>
+                    <label class="flex items-center mt-2 cursor-pointer group">
+                        <input type="checkbox" id="shuffle-toggle" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                        <span class="ml-2 text-xs font-bold text-slate-500 group-hover:text-indigo-600 transition-colors">Xáo trộn câu hỏi & đáp án</span>
+                    </label>
+                </div>
+                <button onclick="startQuiz()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-10 py-4 rounded-2xl font-black transition-all shadow-lg active:scale-95 uppercase tracking-tight">Bắt đầu học</button>
             </div>
         </div>
 
         <!-- QUIZ SCREEN -->
-        <div id="quiz-screen" class="hidden bg-white p-8 rounded-3xl shadow-xl border border-slate-200 fade-in">
-            <div class="flex justify-between items-center mb-8">
-                <span id="progress-text" class="text-xs font-black text-indigo-600 uppercase tracking-widest">Câu 1/1</span>
-                <div class="w-32 h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div id="progress-bar" class="h-full bg-indigo-500 transition-all duration-300" style="width: 0%"></div>
+        <div id="quiz-screen" class="hidden bg-white p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 fade-in">
+            <div class="flex items-center space-x-4 mb-10">
+                <div class="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <span id="progress-text" class="text-sm font-black text-indigo-600">1/1</span>
+            </div>
+            <div id="question-container" class="min-h-[350px]">
+                <div id="question-display" class="mb-10 text-2xl font-extrabold leading-tight text-slate-800"></div>
+                <div id="answer-area" class="w-full space-y-4"></div>
+                <div id="feedback-area" class="hidden mt-8 p-6 rounded-3xl border-l-[6px] fade-in">
+                    <div id="feedback-status" class="font-black text-2xl mb-1 italic tracking-tighter"></div>
+                    <div id="correct-display" class="font-bold text-lg opacity-90"></div>
                 </div>
             </div>
-
-            <div id="question-container" class="min-h-[400px] flex flex-col">
-                <div id="question-display" class="mb-8 text-xl font-bold leading-snug text-slate-800 whitespace-pre-line"></div>
-                <div id="answer-area" class="w-full space-y-4 mb-6"></div>
-                <div id="feedback-area" class="hidden mt-6 p-6 rounded-2xl border-l-8 fade-in">
-                    <div id="feedback-status" class="font-black text-2xl mb-2"></div>
-                    <div id="correct-display" class="text-emerald-700 font-bold text-lg"></div>
+            <div class="flex justify-between items-center mt-12 pt-8 border-t border-slate-50">
+                <button onclick="goBackToSetup()" class="bg-slate-100 text-slate-500 px-6 py-4 rounded-2xl font-bold hover:bg-slate-200 transition-colors">Thoát</button>
+                <div class="flex items-center space-x-4">
+                    <span class="hidden sm:block text-[10px] font-bold text-slate-300 uppercase tracking-widest">Phím tắt: 1-4 chọn, Enter kiểm tra</span>
+                    <button id="btn-action" onclick="handleButtonClick()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-12 py-4 rounded-2xl font-black shadow-xl active:scale-95 transition-all min-w-[200px]">Kiểm tra (Enter)</button>
                 </div>
-            </div>
-
-            <div class="flex justify-between mt-10 pt-6 border-t border-slate-100">
-                <button onclick="goBackToSetup()" class="bg-slate-100 text-slate-500 px-6 py-4 rounded-2xl font-bold">Thoát</button>
-                <button id="btn-action" onclick="handleButtonClick()" class="bg-indigo-600 text-white px-12 py-4 rounded-2xl font-black shadow-xl active:scale-95 transition-all">
-                    Kiểm tra (Enter)
-                </button>
             </div>
         </div>
 
         <!-- RESULT SCREEN -->
-        <div id="result-screen" class="hidden bg-white p-10 rounded-3xl shadow-xl border border-slate-200 text-center fade-in">
-            <div id="score-circle" class="mx-auto w-32 h-32 rounded-full border-8 border-indigo-500 flex items-center justify-center text-4xl font-black text-indigo-600 mb-6 shadow-inner">0/0</div>
-            <h2 class="text-3xl font-black mb-2">Kết thúc!</h2>
-            <div class="grid grid-cols-2 gap-4 max-w-sm mx-auto">
-                <button onclick="restartQuiz()" class="bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">Luyện lại</button>
-                <button onclick="goBackToSetup()" class="bg-slate-100 text-slate-700 py-4 rounded-2xl font-black">Bài mới</button>
+        <div id="result-screen" class="hidden bg-white p-12 rounded-[3rem] shadow-2xl text-center fade-in">
+            <div id="score-circle" class="mx-auto w-40 h-40 rounded-full border-[10px] border-indigo-500 flex items-center justify-center text-5xl font-black text-indigo-600 mb-8 bg-indigo-50 shadow-inner">0/0</div>
+            <h2 class="text-3xl font-black text-slate-800 mb-8">Hoàn thành bài luyện tập!</h2>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <button onclick="restartQuiz()" class="bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black shadow-lg shadow-indigo-100">Luyện lại đề này</button>
+                <button onclick="goBackToSetup()" class="bg-slate-100 text-slate-700 px-10 py-5 rounded-2xl font-black">Soạn đề khác</button>
             </div>
-        </div>
-    </div>
-
-    <!-- GUIDE MODAL -->
-    <div id="guide-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
-        <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl custom-scrollbar fade-in">
-            <h3 class="text-2xl font-black text-indigo-600 mb-6 uppercase">Cấu trúc đề bài v4.3</h3>
-            
-            <div class="space-y-6 text-sm text-slate-600 font-sans">
-                <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100">
-                    <p class="font-black text-indigo-700 mb-2">[TN] TRẮC NGHIỆM</p>
-                    <code class="block bg-white p-2 rounded border border-indigo-200 mb-2 font-mono text-[11px]">
-                        [TN] Thủ đô Việt Nam || Hà Nội | Huế | Đà Nẵng || Hà Nội ;
-                    </code>
-                </div>
-
-                <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-                    <p class="font-black text-emerald-700 mb-2">[DS] ĐÚNG / SAI</p>
-                    <code class="block bg-white p-2 rounded border border-emerald-200 mb-2 font-mono text-[11px]">
-                        [DS] Về địa lý:&#10;
-                        - Ý 1 || Đ&#10;
-                        - Ý 2 || S&#10;
-                        - Ý 3 || Đ;
-                    </code>
-                </div>
-
-                <div class="p-4 bg-amber-50 rounded-xl border border-amber-100">
-                    <p class="font-black text-amber-700 mb-2">[TLN] TRẢ LỜI NGẮN</p>
-                    <code class="block bg-white p-2 rounded border border-amber-200 mb-2 font-mono text-[11px]">
-                        [TLN] 7 x 7 bằng bao nhiêu? || 49 ;
-                    </code>
-                </div>
-
-                <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                    <p class="font-black text-blue-700 mb-2">[TT] / [VLC] GỢI Ý & VIẾT LẠI</p>
-                    <code class="block bg-white p-2 rounded border border-blue-200 mb-2 font-mono text-[11px]">
-                        [TT] gợi ý 1/ gợi ý 2 || Đáp án chính xác ;&#10;
-                        [VLC] câu mẫu | gợi ý ___ | đáp án chính xác ;
-                    </code>
-                </div>
-            </div>
-
-            <button onclick="closeGuide()" class="w-full mt-8 bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg">BẮT ĐẦU</button>
         </div>
     </div>
 
     <script>
-        let questions = [];
-        let currentIndex = 0;
-        let score = 0;
-        let isWaitingForNext = false;
+        let questions = []; 
+        let currentIndex = 0; 
+        let score = 0; 
+        let isWaitingForNext = false; 
         let userResponses = [];
+        let currentTFRow = 0; // Theo dõi dòng Đúng/Sai hiện tại cho phím tắt
 
-        window.onload = () => {
-            const saved = localStorage.getItem('em_chua_tay_dau_v43');
-            if (saved) { document.getElementById('raw-input').value = saved; updateCount(); }
-            else { showGuide(); }
+        window.onload = () => { 
+            const saved = localStorage.getItem('em_chua_tay_dau_v45'); 
+            if (saved) { document.getElementById('raw-input').value = saved; updateCount(); } 
         };
-
-        function showGuide() { document.getElementById('guide-modal').classList.remove('hidden'); }
-        function closeGuide() { document.getElementById('guide-modal').classList.add('hidden'); }
-
-        async function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const arrayBuffer = e.target.result;
-                try {
-                    const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
-                    document.getElementById('raw-input').value = result.value;
-                    updateCount();
-                } catch (err) { alert("Lỗi đọc file .docx"); }
-            };
-            reader.readAsArrayBuffer(file);
-        }
 
         function updateCount() {
             const val = document.getElementById('raw-input').value;
             const count = val.split(';').filter(l => l.trim().includes('||')).length;
             document.getElementById('question-count').innerText = `${count} câu hỏi`;
-            localStorage.setItem('em_chua_tay_dau_v43', val);
+            localStorage.setItem('em_chua_tay_dau_v45', val);
         }
         document.getElementById('raw-input').addEventListener('input', updateCount);
 
+        async function handleFileUpload(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try { 
+                    const result = await mammoth.extractRawText({ arrayBuffer: e.target.result }); 
+                    document.getElementById('raw-input').value = result.value; 
+                    updateCount(); 
+                } catch (err) { alert("Lỗi đọc file .docx"); }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Hàm xáo trộn mảng
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
         function parseQuestions(text) {
-            const rawBlocks = text.split(';').map(b => b.trim()).filter(b => b.length > 0);
-            const results = [];
-            
-            rawBlocks.forEach(block => {
-                const cleanBlock = block.replace(/^\s+|\s+$/g, '');
-                
-                // 1. Dạng [TN] Trắc nghiệm
-                if (cleanBlock.startsWith('[TN]')) {
-                    const content = cleanBlock.replace('[TN]', '').trim();
-                    const parts = content.split('||').map(p => p.trim());
-                    if (parts.length >= 3) {
-                        results.push({
-                            type: 'mcq',
-                            q: parts[0],
-                            options: parts[1].split('|').map(o => o.trim()),
-                            a: parts[2] 
-                        });
-                    }
-                } 
-                // 2. Dạng [DS] Đúng/Sai
-                else if (cleanBlock.startsWith('[DS]')) {
-                    const content = cleanBlock.replace('[DS]', '').trim();
-                    const parts = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-                    const qMain = parts[0];
-                    const subItems = parts.slice(1).map(line => {
-                        const subParts = line.split('||').map(p => p.trim());
-                        return {
-                            text: subParts[0].replace(/^-/, '').trim(),
-                            ans: subParts[1] ? subParts[1].toUpperCase() : ""
-                        };
+            let parsed = text.split(';').map(b => b.trim()).filter(b => b.includes('||')).map(block => {
+                if (block.startsWith('[TN]')) {
+                    const p = block.replace('[TN]', '').split('||').map(s => s.trim());
+                    return { type: 'mcq', q: p[0], options: p[1].split('|').map(o => o.trim()), a: p[2] };
+                } else if (block.startsWith('[DS]')) {
+                    const lines = block.replace('[DS]', '').trim().split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                    const subItems = lines.slice(1).map(line => {
+                        const sp = line.split('||').map(s => s.trim());
+                        return { text: sp[0].replace(/^-/, '').trim(), ans: (sp[1]?.startsWith('Đ') || sp[1]?.startsWith('D')) ? 'đúng' : 'sai' };
                     });
-                    results.push({
-                        type: 'tf_multi',
-                        q: qMain,
-                        subQs: subItems.map(s => s.text),
-                        a: subItems.map(s => (s.ans === 'Đ' || s.ans === 'D') ? 'đúng' : 'sai').join('|')
-                    });
-                }
-                // 3. Dạng [TLN] Trả lời ngắn
-                else if (cleanBlock.startsWith('[TLN]')) {
-                    const content = cleanBlock.replace('[TLN]', '').trim();
-                    const parts = content.split('||').map(p => p.trim());
-                    if (parts.length >= 2) {
-                        results.push({ type: 'number', q: parts[0], a: parts[1].replace(/\s/g, '') });
-                    }
-                }
-                // 4. Dạng [TT] Gợi ý
-                else if (cleanBlock.startsWith('[TT]')) {
-                    const content = cleanBlock.replace('[TT]', '').trim();
-                    const parts = content.split('||').map(p => p.trim());
-                    if (parts.length >= 2) {
-                        results.push({ type: 'write', q: parts[0], a: parts[1] });
-                    }
-                }
-                // 5. Dạng [VLC] Viết lại câu
-                else if (cleanBlock.startsWith('[VLC]')) {
-                    const content = cleanBlock.replace('[VLC]', '').trim();
-                    const parts = content.split('||').map(p => p.trim());
-                    if (parts.length >= 2) {
-                        results.push({ type: 'write', q: parts[0], a: parts[1] });
-                    }
+                    return { type: 'tf_multi', q: lines[0], subQs: subItems, a: subItems.map(s => s.ans).join('|') };
+                } else if (block.startsWith('[TLN]')) {
+                    const p = block.replace('[TLN]', '').split('||').map(s => s.trim());
+                    return { type: 'number', q: p[0], a: p[1].replace(/\s/g, '') };
+                } else {
+                    const prefix = block.substring(0, 4);
+                    const p = block.substring(4).split('||').map(s => s.trim());
+                    return { type: 'write', q: p[0], a: p[1] };
                 }
             });
-            return results;
+
+            if (document.getElementById('shuffle-toggle').checked) {
+                parsed = shuffleArray(parsed);
+                parsed.forEach(item => {
+                    if (item.type === 'mcq') item.options = shuffleArray(item.options);
+                    if (item.type === 'tf_multi') item.subQs = shuffleArray(item.subQs);
+                });
+            }
+            return parsed;
         }
 
         function startQuiz() {
             questions = parseQuestions(document.getElementById('raw-input').value);
-            if (questions.length === 0) return alert("Không tìm thấy cấu trúc hợp lệ!");
+            if (questions.length === 0) return alert("Cấu trúc đề không hợp lệ!");
             currentIndex = 0; score = 0;
             document.getElementById('setup-screen').classList.add('hidden');
             document.getElementById('quiz-screen').classList.remove('hidden');
@@ -251,146 +175,142 @@
         }
 
         function renderQuestion() {
-            isWaitingForNext = false;
-            userResponses = [];
+            isWaitingForNext = false; userResponses = []; currentTFRow = 0;
             const item = questions[currentIndex];
             const area = document.getElementById('answer-area');
-            const btn = document.getElementById('btn-action');
-            
             document.getElementById('feedback-area').classList.add('hidden');
-            btn.innerText = "Kiểm tra (Enter)";
-            btn.className = "bg-indigo-600 text-white px-12 py-4 rounded-2xl font-black shadow-xl active:scale-95 transition-all";
-            document.getElementById('progress-text').innerText = `Câu ${currentIndex + 1}/${questions.length}`;
-            document.getElementById('progress-bar').style.width = `${(currentIndex / questions.length) * 100}%`;
-
+            document.getElementById('btn-action').innerText = "Kiểm tra (Enter)";
+            document.getElementById('progress-text').innerText = `${currentIndex + 1}/${questions.length}`;
+            document.getElementById('progress-bar').style.width = `${((currentIndex + 1) / questions.length) * 100}%`;
             document.getElementById('question-display').innerText = item.q;
             area.innerHTML = "";
 
             if (item.type === 'mcq') {
                 item.options.forEach((opt, idx) => {
                     const b = document.createElement('div');
-                    b.className = "option-btn p-4 rounded-2xl flex items-center space-x-3";
-                    b.innerHTML = `<span class="w-10 h-10 flex items-center justify-center bg-slate-100 rounded-xl font-black">${String.fromCharCode(65+idx)}</span> <span class="font-bold text-slate-700">${opt}</span>`;
-                    b.onclick = () => {
-                        document.querySelectorAll('.option-btn').forEach(el => el.classList.remove('selected'));
-                        b.classList.add('selected');
-                        userResponses = [opt];
-                    };
+                    b.className = "option-btn p-5 rounded-2xl flex items-center space-x-4";
+                    b.id = `opt-${idx}`;
+                    b.innerHTML = `
+                        <div class="label-box">${String.fromCharCode(65+idx)}</div> 
+                        <span class="font-bold text-slate-700">${opt}</span>
+                        <span class="key-hint">${idx+1}</span>
+                    `;
+                    b.onclick = () => selectMCQ(idx, opt);
                     area.appendChild(b);
                 });
             } else if (item.type === 'tf_multi') {
                 item.subQs.forEach((sub, idx) => {
                     const row = document.createElement('div');
-                    row.className = "bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col sm:flex-row justify-between items-center";
-                    row.innerHTML = `<div class="font-bold text-slate-700 flex-1 pr-4">${idx+1}. ${sub}</div>
-                        <div class="flex space-x-2" id="row-${idx}">
-                            <button class="tf-btn px-4 py-2 rounded-xl border-2 border-slate-200 font-bold text-sm" onclick="selectTF(${idx}, 'đúng', this)">Đúng</button>
-                            <button class="tf-btn px-4 py-2 rounded-xl border-2 border-slate-200 font-bold text-sm" onclick="selectTF(${idx}, 'sai', this)">Sai</button>
+                    row.className = `bg-slate-50 p-5 rounded-2xl border-2 border-slate-100 flex flex-col sm:flex-row justify-between items-center transition-all ${idx === 0 ? 'ring-2 ring-indigo-100 border-indigo-200' : ''}`;
+                    row.id = `tf-row-${idx}`;
+                    row.innerHTML = `<div class="font-bold text-slate-700 flex-1 pr-4">${idx+1}. ${sub.text}</div>
+                        <div class="flex space-x-2" id="row-btns-${idx}">
+                            <button class="tf-btn px-6 py-2 rounded-xl border-2 border-slate-200 font-bold" id="tf-${idx}-đúng" onclick="selectTF(${idx}, 'đúng')">Đúng (1)</button>
+                            <button class="tf-btn px-6 py-2 rounded-xl border-2 border-slate-200 font-bold" id="tf-${idx}-sai" onclick="selectTF(${idx}, 'sai')">Sai (2)</button>
                         </div>`;
                     area.appendChild(row);
                 });
             } else if (item.type === 'number') {
-                const len = item.a.length;
-                const container = document.createElement('div');
-                container.className = "flex justify-center space-x-2 py-8";
-                for (let i = 0; i < (len > 4 ? len : 4); i++) {
-                    const input = document.createElement('input');
-                    input.type = "text"; input.maxLength = 1;
-                    input.className = "w-14 h-20 text-center text-4xl font-black bg-white border-4 border-slate-200 rounded-2xl focus:border-indigo-500 outline-none";
-                    input.id = `num-${i}`;
-                    input.oninput = (e) => { if (e.target.value && i < (len > 4 ? len : 4) - 1) document.getElementById(`num-${i+1}`).focus(); };
-                    container.appendChild(input);
+                const c = document.createElement('div'); c.className = "flex justify-center space-x-2 py-6";
+                for (let i = 0; i < Math.max(item.a.length, 4); i++) {
+                    const input = document.createElement('input'); input.type = "text"; input.maxLength = 1;
+                    input.className = "w-14 h-20 text-center text-4xl font-black border-4 border-slate-100 rounded-2xl outline-none focus:border-indigo-400";
+                    input.id = `num-${i}`; input.oninput = (e) => { if (e.target.value && i < Math.max(item.a.length, 4) - 1) document.getElementById(`num-${i+1}`).focus(); };
+                    c.appendChild(input);
                 }
-                area.appendChild(container);
-                const firstInput = document.getElementById('num-0');
-                if(firstInput) firstInput.focus();
+                area.appendChild(c); setTimeout(() => document.getElementById('num-0')?.focus(), 100);
             } else {
-                area.innerHTML = `<textarea id="ans-input" class="w-full p-6 border-4 border-slate-100 rounded-3xl text-xl font-bold outline-none h-32" placeholder="Câu trả lời..."></textarea>`;
-                document.getElementById('ans-input').focus();
+                area.innerHTML = `<textarea id="ans-input" class="w-full p-6 bg-slate-50 border-4 border-slate-100 rounded-[2rem] text-xl font-bold outline-none h-32 focus:border-indigo-200" placeholder="Nhập câu trả lời..."></textarea>`;
+                setTimeout(() => document.getElementById('ans-input')?.focus(), 100);
             }
         }
 
-        function selectTF(rowIdx, val, el) {
-            const row = document.getElementById(`row-${rowIdx}`);
+        function selectMCQ(idx, val) {
+            document.querySelectorAll('.option-btn').forEach(el => el.classList.remove('selected'));
+            document.getElementById(`opt-${idx}`).classList.add('selected');
+            userResponses = [val];
+        }
+
+        function selectTF(idx, val) {
+            const row = document.getElementById(`row-btns-${idx}`);
             row.querySelectorAll('.tf-btn').forEach(btn => btn.classList.remove('active-đúng', 'active-sai'));
-            el.classList.add('active-' + val);
-            userResponses[rowIdx] = val;
+            document.getElementById(`tf-${idx}-${val}`).classList.add('active-' + val);
+            userResponses[idx] = val;
+            
+            // Tự động chuyển focus xuống dòng tiếp theo nếu dùng phím tắt
+            if (idx === currentTFRow && idx < questions[currentIndex].subQs.length - 1) {
+                document.getElementById(`tf-row-${currentTFRow}`).classList.remove('ring-2', 'ring-indigo-100', 'border-indigo-200');
+                currentTFRow++;
+                document.getElementById(`tf-row-${currentTFRow}`).classList.add('ring-2', 'ring-indigo-100', 'border-indigo-200');
+            }
         }
 
         function handleButtonClick() { if (isWaitingForNext) nextQuestion(); else handleSubmit(); }
 
         function handleSubmit() {
-            const item = questions[currentIndex];
-            let isCorrect = false;
-            let displayCorrect = "";
-
+            const item = questions[currentIndex]; let isCorrect = false; let displayCorrect = "";
+            
             if (item.type === 'mcq') {
                 if (!userResponses[0]) return;
-                // Check if answer is A/B/C/D index or full text
-                const correctTxt = item.a;
-                isCorrect = userResponses[0].toLowerCase() === correctTxt.toLowerCase();
-                displayCorrect = `Đáp án đúng là: ${correctTxt}`;
+                isCorrect = userResponses[0].toLowerCase() === item.a.toLowerCase();
+                displayCorrect = `Đáp án: ${item.a}`;
             } else if (item.type === 'tf_multi') {
                 if (userResponses.length < item.subQs.length) return;
                 const correctArr = item.a.split('|');
-                isCorrect = userResponses.every((val, i) => val === correctArr[i]);
-                displayCorrect = `Đáp án đúng: ${item.a.toUpperCase()}`;
+                // Lưu ý: item.a lưu chuỗi kết quả theo thứ tự đã xáo trộn lúc parse
+                isCorrect = userResponses.every((v, i) => v === correctArr[i]);
+                displayCorrect = `Đáp án: ${item.a.toUpperCase()}`;
             } else if (item.type === 'number') {
-                let userNum = "";
-                const len = item.a.length > 4 ? item.a.length : 4;
-                for(let i=0; i<len; i++) userNum += document.getElementById(`num-${i}`).value;
-                isCorrect = userNum === item.a;
-                displayCorrect = `Số đúng là: ${item.a}`;
+                let uNum = ""; for(let i=0; i<Math.max(item.a.length, 4); i++) uNum += document.getElementById(`num-${i}`).value;
+                isCorrect = uNum === item.a; displayCorrect = `Số đúng: ${item.a}`;
             } else {
-                const userText = document.getElementById('ans-input').value.trim().toLowerCase();
-                isCorrect = userText === item.a.toLowerCase();
-                displayCorrect = `Đáp án đúng: ${item.a}`;
+                const uText = document.getElementById('ans-input').value.trim().toLowerCase();
+                isCorrect = uText === item.a.toLowerCase(); displayCorrect = `Đáp án: ${item.a}`;
             }
 
             isWaitingForNext = true;
-            const status = document.getElementById('feedback-status');
+            const status = document.getElementById('feedback-status'); 
             const box = document.getElementById('feedback-area');
-            const displayC = document.getElementById('correct-display');
             box.classList.remove('hidden');
-
             if (isCorrect) {
-                score++;
-                status.innerText = "CHÍNH XÁC!";
-                status.className = "font-black text-2xl mb-1 text-emerald-600";
-                box.className = "mt-6 p-6 rounded-2xl border-l-8 border-emerald-500 bg-emerald-50/50 fade-in";
-                displayC.innerText = "Giỏi quá!";
+                score++; status.innerText = "CHÍNH XÁC!"; status.className = "font-black text-2xl mb-1 text-emerald-600 italic";
+                box.className = "mt-8 p-6 rounded-3xl border-l-[6px] border-emerald-500 bg-emerald-50 fade-in";
+                document.getElementById('correct-display').innerText = "Tuyệt vời!";
             } else {
-                status.innerText = "CHƯA ĐÚNG!";
-                status.className = "font-black text-2xl mb-1 text-red-600";
-                box.className = "mt-6 p-6 rounded-2xl border-l-8 border-red-500 bg-red-50/50 fade-in";
-                displayC.innerText = displayCorrect;
+                status.innerText = "CHƯA ĐÚNG!"; status.className = "font-black text-2xl mb-1 text-red-600 italic";
+                box.className = "mt-8 p-6 rounded-3xl border-l-[6px] border-red-500 bg-red-50 fade-in";
+                document.getElementById('correct-display').innerText = displayCorrect;
             }
             document.getElementById('btn-action').innerText = "Tiếp theo (Enter)";
         }
 
-        function nextQuestion() {
-            currentIndex++;
-            if (currentIndex < questions.length) renderQuestion();
-            else finishQuiz();
-        }
-
-        function finishQuiz() {
-            document.getElementById('quiz-screen').classList.add('hidden');
-            document.getElementById('result-screen').classList.remove('hidden');
-            document.getElementById('score-circle').innerText = `${score}/${questions.length}`;
-        }
-
-        function goBackToSetup() {
-            document.getElementById('setup-screen').classList.remove('hidden');
-            document.getElementById('quiz-screen').classList.add('hidden');
-            document.getElementById('result-screen').classList.add('hidden');
-        }
-
+        function nextQuestion() { currentIndex++; if (currentIndex < questions.length) renderQuestion(); else finishQuiz(); }
+        function finishQuiz() { document.getElementById('quiz-screen').classList.add('hidden'); document.getElementById('result-screen').classList.remove('hidden'); document.getElementById('score-circle').innerText = `${score}/${questions.length}`; }
+        function goBackToSetup() { document.getElementById('setup-screen').classList.remove('hidden'); document.getElementById('quiz-screen').classList.add('hidden'); document.getElementById('result-screen').classList.add('hidden'); }
         function restartQuiz() { startQuiz(); }
 
+        // LẮP PHÍM TẮT
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !document.getElementById('quiz-screen').classList.contains('hidden')) {
+            const quizVisible = !document.getElementById('quiz-screen').classList.contains('hidden');
+            if (!quizVisible) return;
+
+            // Phím Enter
+            if (e.key === 'Enter') {
                 if (document.activeElement.tagName !== 'TEXTAREA') handleButtonClick();
+                return;
+            }
+
+            // Phím số 1, 2, 3, 4
+            if (['1', '2', '3', '4'].includes(e.key) && !isWaitingForNext) {
+                const item = questions[currentIndex];
+                const idx = parseInt(e.key) - 1;
+
+                if (item.type === 'mcq' && item.options[idx]) {
+                    selectMCQ(idx, item.options[idx]);
+                } else if (item.type === 'tf_multi') {
+                    if (e.key === '1') selectTF(currentTFRow, 'đúng');
+                    if (e.key === '2') selectTF(currentTFRow, 'sai');
+                }
             }
         });
     </script>
